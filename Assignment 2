@@ -1,0 +1,130 @@
+.data
+name: .asciiz "Brayden_McDowell\n"
+newline: .asciiz "\n"
+input_prompt: .asciiz "Enter a Number from 1 to 5: "
+error_text: .asciiz "Input is not from 1 to 5\n"
+enter1: .asciiz "Enter the first number: "
+enter2: .asciiz "Enter the second number: "
+abosolute: .asciiz "Absolute value of difference: "
+sum: .asciiz "The sum of these numbers: "
+sum_error: .asciiz "Sum cannot be determined"
+end: .asciiz "End of Program"
+
+.text
+.globl main
+main:
+#Print Name
+lui $a0, 0x1001 # upper half of name string
+ori $a0, $a0 0x0000 # bottom half of name string 
+addi $v0,$0,4 # set command to print
+syscall # print name
+
+#Get input for number of calculations
+
+j top #skip the error printout for the first prompt
+error: 
+lui $a0, 0x1001 # upper half of error string 
+ori $a0, $a0 0x0031 # bottom half of error string
+addi $v0,$0,4 # set command to print
+syscall # print error
+
+top: 
+lui $a0, 0x1001 # upper half of prompt
+ori $a0, $a0 0x0014 # bottom half of prompt
+addi $v0,$0,4 # set command to print
+syscall # print prompt
+
+addi $v0, $zero, 5 #Set to 5 so syscall prompts for an integer
+syscall
+add $s1, $zero, $v0 #Store recieved integer in s1
+slti $t0, $s1, 6 #If entry is less then 6 make $t0 = 1
+beq $zero, $t0, error  #if s1 was 6 or more jump to top
+slti $t0, $s1, 1 #Same as above but making sure its not 0 or less
+bne $zero, $t0, error #if s1 less then one jump
+
+#Preform calculations loops
+addi $s1, $s1, 1 #add one to account for the first loop
+calc: 
+addi $s1, $s1, -1 #Increment sl down one per loop
+beq $zero, $s1, finish #jump to end if all the inputed amount of calculations have been preformed
+
+#Get inputs
+lui $a0, 0x1001 # upper half of error enter1 
+ori $a0, $a0 0x004b # bottom half of enter1
+addi $v0,$0,4 # set command to print
+syscall # print enter1
+
+addi $v0, $zero, 5 #Set to 5 so syscall prompts for an integer
+syscall
+add $s2, $zero, $v0 #Store recieved integer in s2
+
+lui $a0, 0x1001 # upper half of error enter2 
+ori $a0, $a0 0x0064 # bottom half of enter2
+addi $v0,$0,4 # set command to print
+syscall # print enter2
+
+addi $v0, $zero, 5 #Set to 5 so syscall prompts for an integer
+syscall
+add $s3, $zero, $v0 #Store recieved integer in s3
+
+#Preform math and print results
+sub $t0, $s2, $s3 #Put difference in t0
+slti $t1, $t0, 0 #Check to see if difference was negative
+bne $t1, $zero, flip # if was less then 0 jump
+j printabs
+flip:
+sub $t0, $zero, $t0
+printabs:
+lui $a0, 0x1001 # upper half of error enter2 
+ori $a0, $a0 0x007e # bottom half of enter2
+addi $v0,$0,4 # set command to print
+syscall # print enter2
+
+add $a0, $zero, $t0
+addi $v0,$0,1 # set command to print integer
+syscall # print absvalue
+
+lui $a0, 0x1001 # upper half of error newline 
+ori $a0, $a0 0x0012 # bottom half of newline
+addi $v0,$0,4 # set command to print
+syscall # print newline
+
+beq $s2, $s3, sum_print  #check if numbers are equal. jump if so
+slt $t0, $s2, $s3 #check if s2<s3
+bne $zero, $t0, sum_print #jump if s2 was <s3
+
+lui $a0, 0x1001 # upper half of error sumerror 
+ori $a0, $a0 0x00b8 # bottom half of sumerror
+addi $v0,$0,4 # set command to print
+syscall # print sumerror
+
+lui $a0, 0x1001 # upper half of error newline 
+ori $a0, $a0 0x0012 # bottom half of newline
+addi $v0,$0,4 # set command to print
+syscall # print newline
+
+j calc #jump back to top of loop
+sum_print: 
+
+lui $a0, 0x1001 # upper half of sum
+ori $a0, $a0 0x009d # sum
+addi $v0,$0,4 # set command to print
+syscall # print sum
+
+add $a0, $s2, $s3 #Add the two inputs to get the sum
+addi $v0,$0,1 # set command to print integer
+syscall # print sum
+
+lui $a0, 0x1001 # upper half of error newline 
+ori $a0, $a0 0x0012 # bottom half of newline
+addi $v0,$0,4 # set command to print
+syscall # print newline
+
+j calc #jump back to top of loop
+
+finish:
+#Print ending
+lui $a0, 0x1001 # upper half of end
+ori $a0, $a0 0x00d1 # bottom half of end
+addi $v0,$0,4 # set command to print
+syscall # print end

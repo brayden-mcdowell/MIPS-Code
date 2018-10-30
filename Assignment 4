@@ -1,0 +1,122 @@
+#Brayden McDowell - EEE 230 - 10/14/18 - Assignment 4
+.data
+data: .space 40
+name: .asciiz "Brayden McDowell \n"
+Enter: .asciiz "Enter a number "
+Average: .asciiz "The average is "
+Count: .asciiz "\nThe amount of numbers greater then the average is "
+.text
+.globl main
+
+main:
+lui $a0, 0x1001 # upper half of name string
+ori $a0, $a0 0x0028# bottom half of name string 
+addi $v0,$0,4 # set command to print
+syscall # print name
+
+lui $a0, 0x1001 #put array address into parameter
+jal readData
+
+lui $a0, 0x1001 #put array address into parameter
+add $a1, $s0, $zero #Put count in parameter register
+jal average
+
+lui $a0, 0x1001 # upper half of average string
+ori $a0, $a0 0x004b# bottom half of average string 
+addi $v0,$0,4 # set command to print
+syscall # print name
+
+sub.s $f12, $f12, $f12 #set f12 to 0
+add.s $f12, $f0, $f12 #set f12 to average
+addi $v0,$0,2 # set command to print float
+syscall
+
+lui $a0, 0x1001 #put array address into parameter
+jal count
+
+lui $a0, 0x1001 # upper half of Count string
+ori $a0, $a0 0x005b# bottom half of Count string 
+addi $v0,$0,4 # set command to print
+syscall # print Count
+
+addi $a0, $s2, 0 #put <# in a0 for printing
+addi $v0,$0,1 # set command to print
+syscall # print <3
+
+ori $v0, $0, 10 #set command to end program
+syscall #end program
+
+readData:
+add $t0, $zero, $a0 #setup pointer for lw 
+addi $s0, $zero, 0 #set the count to 0 for incrementing
+addi $s1, $zero, 10 #set a register to 10 for beq with count
+
+readDataLoop:
+beq $s0, $s1, readDataEnd #end function if count is 10
+lui $a0, 0x1001 # upper half of enter string
+ori $a0, $a0 0x003b# bottom half of enter string 
+addi $v0,$0,4 # set command to print
+syscall # print Enter
+
+addi $v0, $zero, 5 #Set to 5 so syscall prompts for an integer
+syscall
+beq $v0, $zero, readDataEnd #end function if 0 is entered
+sw $v0, 0($t0) #store input
+addi $t0, $t0, 4 #Increment pointer by a word
+addi $s0, $s0, 1 #Increment count by 1
+j readDataLoop
+
+readDataEnd:
+jr $ra #return from function
+
+average:
+beq $a1, $zero, averageEndNull #if count is zero return 0.0 
+sub.s $f0, $f0, $f0 #set $f0 to 0.0 so the array can be summed into it
+add $t0, $zero, $a0 #setup pointer for lw 
+add $s0, $zero, $a1 #set s0 to count
+add $t1, $zero, $a1 #set t1 to count
+mtc1 $t1, $f3 # move count to coprocessor
+cvt.s.w $f2, $f3 #store count in $f2 for division
+
+averageLoop:
+beq $s0, $zero, averageEnd #leave loop if all have been summed
+lw $t1, 0($t0) #load an entry
+mtc1 $t1, $f5 # move entry to coprocessor
+cvt.s.w $f4, $f5 #store result in $f4
+add.s $f0, $f0, $f4 #add loaded number to sum
+addi $t0, $t0, 4 #Increment pointer by a word
+addi $s0, $s0, -1 #Deincrement count by 1
+j averageLoop
+
+averageEnd:
+div.s $f0, $f0, $f2 #get the average by sum/count
+jr $ra
+
+averageEndNull:
+sub.s $f0, $f0, $f0 #set $f0 to 0.0 for if count=0
+jr $ra
+
+count:
+add $t0, $zero, $a0 #setup pointer for lw 
+add $s0, $zero, $a1 #set s0 to count
+addi $s2, $zero, 0 #set <# to 0
+
+countLoop:
+beq $s0, $zero, countEnd #leave loop if all have been tested
+lw $t1, 0($t0) #load an entry
+mtc1 $t1, $f5 # move entry to coprocessor
+cvt.s.w $f4, $f5 #store result in $f4
+c.lt.s $f0, $f4
+bc1t countTrue
+addi $t0, $t0, 4 #Increment pointer by a word
+addi $s0, $s0, -1 #Deincrement count by 1
+j countLoop
+
+countTrue: 
+addi $s2, $s2, 1 #increment <#
+addi $t0, $t0, 4 #Increment pointer by a word
+addi $s0, $s0, -1 #Deincrement count by 1
+j countLoop
+
+countEnd:
+jr $ra

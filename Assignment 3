@@ -1,0 +1,132 @@
+#Brayden McDowell - EEE 230 - 10/1/18 - Assignment 3
+.data
+numbers: .space 80 #declare 80 bytes of storage to hold array of 20 integers
+prompt: .asciiz "How many values to read? "
+space: .asciiz " "
+.text
+.globl main
+main:
+#read data into array
+lui $a0, 0x1001 #put address of array into parameter $a0
+jal readData #call readdata function
+ori $s0, $v0, 0 #save number of integers read into $s0
+#print array
+lui $a0, 0x1001 #put address of array into parameter $a0
+ori $a1, $s0, 0 #put count into parameter
+jal print #call print function
+#sort array
+lui $a0, 0x1001 #put address of array into parameter $a0
+ori $a1, $s0, 0 #put count into parameter
+jal sort #call sort function
+#print array
+lui $a0, 0x1001 #put address of array into parameter $a0
+ori $a1, $s0, 0 #put count into parameter
+jal print #call print function
+#exit
+ori $v0, $0, 10 #set command to end program
+syscall #end program
+#function swap is called by sort
+#$a0 holds address of one integer
+#$a1 holds address of another integer
+swap:
+lw $t0, 0($a0) #get first value
+lw $t1, 0($a1) #get second value
+sw $t0, 0($a1) #store first value
+sw $t1, 0($a0) #store second value
+jr $ra
+
+readData:
+addi $sp, $sp, -8 #make space on stack
+sw $s0, 0($sp) #store s2
+sw $s1, 4($sp) #store s1
+add $t4, $zero, $a0 #Create pointer
+lui $a0, 0x1001 # upper half how many values 
+ori $a0, $a0 0x0050 # bottom half 
+addi $v0,$0,4 # set command to print
+syscall # print prompt
+
+
+addi $v0, $zero, 5 #Set to 5 so syscall prompts for an integer
+syscall
+add $s0, $zero, $v0 #Store recieved integer in s0 for count
+addi $s1, $zero, 0 #set i to zero
+addi $t4, $t4, -4 #Move pointer back a word to account for first loop
+readDataTop:
+slt $t1, $s1, $s0
+bne $zero, $t1, readDataLoop #if count/=/i then preform loop
+add $v0, $s0, $zero #store return value in v0
+lw $s0, 0($sp) #restore s0
+lw $s1, 4($sp) #restore s1
+addi $sp,$sp, 8 #resore sp
+jr $ra #return from function
+
+readDataLoop:
+addi $v0, $zero, 5 #Set to 5 so syscall prompts for an integer
+syscall
+add $t0, $zero, $v0 #Store recieved integer in t0 for putting in list
+addi $t4, $t4, 4 #move pointer 1 word forward
+sw $t0, 0($t4) #store input in array
+addi $s1, $s1, 1 #increment i
+j readDataTop
+
+print:
+addi $t1, $zero, 0 #set i to 0
+add $t0, $zero, $a0 #Create pointer
+printTop:
+slt $t2, $t1, $a1 
+bne $t2, $zero, printLoop #if count/=/i then preform loop
+jr $ra
+printLoop:
+lw $a0, 0($t0)
+addi $v0, $0, 1 #Set to print integer
+syscall #print integer
+lui $a0, 0x1001 # upper half space
+ori $a0, $a0 0x006a # bottom half 
+addi $v0,$0,4 # set command to print
+syscall # print space
+addi $t1, $t1, 1 #Increment i by 1
+addi $t0, $t0, 4 #Increment pointer by one word
+j printTop
+
+sort:
+addi $sp, $sp, -4 #make space on stack
+sw $ra, 0($sp) #store return address on stack
+addi $s6, $a0, 0 #Store array adress in s6
+add $s5, $a1, $zero #Put count in s5
+addi $t3, $a1, 0 #set i to count
+
+endCheck:
+add $s3, $s6, $zero #Create Pointer1
+addi $s4, $s6, 4 #Create Pointer2 a word ahead of Pointer1
+addi $t4, $zero, 1 #set j to 1
+slt $t1, $0, $t3 #check if i=0
+bne $t1, $0 jCheck
+lw $ra, 0($sp)
+jr $ra
+jCheck:
+slt $t1, $t4, $t3 #check if j<i
+bne $t1, $zero sortLoop #preform sort if still moving j up
+addi $t3, $t3, -1 #de-increment i
+j endCheck
+
+sortLoop:
+add $a0, $zero, $s3 #set a0 to pointer1
+add $a1, $zero, $s4 #set a1 to pointer2
+lw $a0, 0($a0) #load for checking if swap is needed
+lw $a1, 0($a1) #load for checking if swap is needed
+slt $t0, $a0, $a1 #check if a0 is less then a1
+beq $t0, $zero swapSetup
+addi $t4, $t4, 1 #Increment count of  j
+
+addi $s3, $s3, 4
+addi $s4, $s4, 4 #increment pointers by a word
+j jCheck
+  
+swapSetup:
+add $a0, $zero, $s3 #set a0 to pointer1
+add $a1, $zero, $s4 #set a1 to pointer2
+jal swap
+addi $t4, $t4, 1 #Increment count of  j
+addi $s3, $s3, 4
+addi $s4, $s4, 4 #increment pointers by a word
+j jCheck
